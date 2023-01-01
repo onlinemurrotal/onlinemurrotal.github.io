@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content"muhammad thoriq"/>
+    <meta name="description" content"Murrotal online 30 Juz Syeikh Al Khusary"/>
+    <title>Murrotal Al Quran</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
+      integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w=="
+      crossorigin="anonymous"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/main.css" />
+  </head>
+  <body>
+    <div class="player">
+      <!-- Dashboard -->
+      <div class="dashboard">
+        <!-- Header -->
+        <header>
+          <h4>Syeikh Al Khusary</h4>
+          <h2>Mesir</h2>
+        </header>
+
+        <!-- CD -->
+        <div class="cd">
+          <div class="cd-thumb" style="background-image: url('https://i.ytimg.com/vi/jTLhQf5KJSc/maxresdefault.jpg');"></div>
+        </div>
+
+        <!-- Control -->
+        <div class="control">
+          <div class="btn btn-repeat">
+            <i class="fas fa-redo"></i>
+          </div>
+          <div class="btn btn-prev">
+            <i class="fas fa-step-backward"></i>
+          </div>
+          <div class="btn btn-toggle-play">
+            <i class="fas fa-pause icon-pause"></i>
+            <i class="fas fa-play icon-play"></i>
+          </div>
+          <div class="btn btn-next">
+            <i class="fas fa-step-forward"></i>
+          </div>
+          <div class="btn btn-random">
+            <i class="fas fa-random"></i>
+          </div>
+        </div>
+
+        <input id="progress" class="progress" type="range" step="1" value="0" min="0" max="100" />
+
+        <audio id="audio" src=""></audio>
+      </div>
+
+      <!-- Playlist -->
+      <div class="playlist"></div>
+    </div>
+    <script>
+      /**
+       * 1. Render songs -> OK
+       * 2. Scroll top -> OK
+       * 3. Play / pause / seek(tua) // bug in seek
+       * 4. CD rotate -> OK
+       * 5. Next / prev -> OK
+       * 6. Random -> OK
+       * 7. Next / Repeat when ended -> OK
+       * 8. Active song -> OK
+       * 9. Scroll active song into-view -> bug when song go to index 0 1 2
+       * 10. Play song when click -. OK
+       * 11. Save to localStorage
+       */
+
+      const $ = document.querySelector.bind(document);
+      const $$ = document.querySelectorAll.bind(document);
+
+      const PLAYER_STORAGE_KEY = "VTC_PLAYER";
+
+      const player = $(".player");
+      const cd = $(".cd");
+
+      const heading = $("header h2");
+      const cdThumb = $(".cd-thumb");
+      const audio = $("#audio");
+      const playlist = $(".playlist");
+
+      const playBtn = $(".btn-toggle-play");
+      const progress = $("#progress");
+
+      const prevBtn = $(".btn-prev");
+      const nextBtn = $(".btn-next");
+
+      const randomBtn = $(".btn-random");
+      const repeatBtn = $(".btn-repeat");
+
+      const app = {
+        currentIndex: 0, //current song position from 0 -> n-1
+        isPlaying: false,
+        isRandom: false,
+        isRepeat: false,
+        config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+        songs: [
+          {
+            name: "AL-Faatihah سورة الفاتحة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/001_husary_fatiha.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "AL-Baqarah سورة البقرة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/002_husary_baqara.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Ali-`Imraan سورة آل عمران",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/003_husary_aalimran.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "An-Nisaa' سورة النساء",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/004_husary_nisaa%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Al-Ma'idah سورة المائدة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/005_husary_ma%27ida.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Al-an`am سورة الأنعام",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/006_husary_an%27aam.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Al-Aaraf سورة الأعراف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/007_husary_a%27raf.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Al-Anfaal سورة الأنفال",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/008_husary_anfal.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "At-Taubah سورة التوبة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/009_husary_tawba.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+          {
+            name: "Yunus سورة يونس",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/010_husary_yonus.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Hud سورة هود",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/011_husary_hood.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Yusuf سورة يوسف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/012_husary_yosuf.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Ar-Raad سورة الرعد",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/013_husary_ra%27d.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Ibrahim سورة إبراهيم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/014_husary_ibrahim.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Hijr سورة الحجر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/015_husary_hijr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "An-Nahl سورة النحل",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/016_husary_nahl.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Isra' سورة الإسراء",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/017_husary_israa%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Kahf سورة الكهف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/018_husary_kahf.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Maryam سورة مريم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/019_husary_mariam.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Taa haa سورة طه",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/020_husary_taha.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Anbiyaa' سورة الأنبياء",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/021_husary_anbiyaa%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Hajj سورة الحج",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/022_husary_haj.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		 
+		  {
+            name: "al-Mu'minun سورة المؤمنون",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/023_husary_mu%27minoon.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "An-Nur سورة النور",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/024_husary_noor.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Furqan سورة الفرقان",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/025_husary_furqan.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ash-shu`ara' سورة الشعراء",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/026_husary_shu%27araa%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "An-Naml سورة النمل",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/027_husary_naml.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Qasas سورة القصص",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/028_husary_qasas.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Ankabut سورة العنكبوت",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/029_husary_ankaboot.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		
+		 {
+            name: "Ar-Rum سورة الروم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/030_husary_room.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Luqman سورة لقمان",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/031_husary_luqman.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "As-Sajdah سورة السجدة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/032_husary_sajda.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Ahzab سورة الأحزاب",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/033_husary_ahzab.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "As-Saba' سورة سبأ",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/034_husary_saba%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Fatir سورة فاطر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/035_husary_fatir.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "yasin سورة يس",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/036_husary_yaseen.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "As-Saffaat سورة الصافات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/037_husary_saffaat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Saad سورة ص",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/038_husary_saad.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Az-Zumar سورة الزمر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/039_husary_zumar.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ghafir سورة غافر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/040_husary_ghafir.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Fussilat سورة فصلت",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/041_husary_fussilat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ash-Syura سورة الشورى",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/042_husary_shoora.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Azl-Zukhruf سورة الزخرف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/043_husary_zukhrof.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ad-Dukhaan سورة الدخان",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/044_husary_dukhan.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Jatsiyah سورة الجاثية",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/045_husary_jathiya.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Ahqaf سورة الأحقاف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/046_husary_ahqaf.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Muhammad سورة محمد",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/047_husary_muhammad.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Fath سورة الفتح",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/048_husary_fat%27h.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Hujurat سورة الحجرات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/049_husary_hujurat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Qaaf سورة ق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/050_husary_qaf.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ad-Dhaariyaat سورة الذاريات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/051_husary_thariyat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "At-Thur سورة الطور",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/052_husary_toor.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "An-Najm سورة النجم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/053_husary_najm.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Qamar سورة القمر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/054_husary_qamar.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Ar-Rahman سورة الرحمن",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/055_husary_rahman.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Waqi`ah سورة الواقعة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/056_husary_waqi%27a.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Hadid سورة الحديد",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/057_husary_hadeed.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Mujadilah سورة المجادلة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/058_husary_mujadila.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Hashr سورة الحشر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/059_husary_hashr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Mumtahanah سورة الممتحنة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/060_husary_mumtahana.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "As-Saff سورة الصف",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/061_husary_saff.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Jumu`ah سورة الجمعة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/062_husary_jumu%27a.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Munafiqun سورة المنافقون",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/063_husary_munafiqoon.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "At-Taghabun سورة التغابن",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/064_husary_taghabon.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "At-Talaq سورة الطلاق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/065_husary_talaq.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "At-Tahrim سورة التحريم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/066_husary_tahreem.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Mulk سورة الملك",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/067_husary_mulk.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Qalam سورة القلم",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/068_husary_qalam.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Haqqah سورة الحاقة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/069_husary_haaqa.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Ma`arij سورة المعارج",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/070_husary_ma%27arij.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Nuh سورة نوح",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/071_husary_nooh.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Jinn سورة الجن",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/072_husary_jinn.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Muzammil سورة المزمل",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/073_husary_muzzamil.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Muddatsir سورة المدثر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/074_husary_muddathir.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Qiyamah سورة القيامة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/075_husary_qiyama.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Insan سورة الإنسان",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/076_husary_insaan.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Mursalat سورة المرسلات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/077_husary_mursalat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "An-Naba' سورة النبأ",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/078_husary_naba%27.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "An-Nazi`at سورة النازعات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/079_husary_nazi%27aat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "`Abasa سورة عبس",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/080_husary_abas.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "At-Takwer سورة التكوير",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/081_husary_takweer.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Infithar سورة الانفطار",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/082_husary_infitar.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Mutaffifin سورة المطففين",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/083_husary_mutafifeen.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Inshiqaq سورة الانشقاق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/084_husary_inshiqaq.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Buruj سورة البروج",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/085_husary_burooj.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "At-Thoriq سورة الطارق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/086_husary_tariq.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "al-'Aala سورة الأعلى",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/087_husary_a%27la.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Ghashiyah سورة الغاشية",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/088_husary_ghashiya.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Fajr سورة الفجر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/089_husary_fajr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Balad سورة البلد",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/090_husary_balad.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Ash-Shams سورة الشمس",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/091_husary_shams.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Lail سورة الليل",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/092_husary_layl.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Ad-Dhuha سورة الضحى",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/093_husary_dhuha.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Insyirah سورة الشرح",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/094_husary_sharh.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "At-Tin سورة التين",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/095_husary_teen.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-`alaq سورة العلق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/096_husary_alaq.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-qadr سورة القدر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/097_husary_qadr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Bayyinah سورة البينة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/098_husary_bayyina.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Az-Zalzalah سورة الزلزلة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/099_husary_zalzala.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Adiyat سورة العاديات",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/100_husary_aadiyat.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Qari`ah سورة القارعة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/101_husary_qari%27a.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "At-Takatsur سورة التكاثر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/102_husary_takathur.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Asr سورة العصر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/103_husary_asr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Humazah سورة الهمزة",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/104_husary_humaza.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Fil سورة الفيل",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/105_husary_feel.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Quraish سورة قريش",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/106_husary_quraysh.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Maa`un سورة الماعون",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/107_husary_ma%27oon.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Kautsar سورة الكوثر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/108_husary_kawthar.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		  {
+            name: "Al-Kafirun سورة الكافرون",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/109_husary_kaferoon.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "An-Nasr سورة النصر",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/110_husary_nasr.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Lahab سورة المسد",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/111_husary_masad.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Ikhlas سورة الإخلاص",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/112_husary_ikhlas.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "Al-Falaq سورة الفلق",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/113_husary_falaq.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		  
+		   {
+            name: "An-nas سورة الناس",
+            singer: "Syeikh Al Khusary",
+            path: "https://islamdownload.net/r/124151/114_husary_naas.mp3",
+            image: "https://www.yemenasda.net/file/2019/10/81qZcdIs-KL.png",
+          },
+		 
+		  
+		  
+        ],
+        setConfig: function (key, value) {
+          this.config[key] = value;
+          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+        },
+        render: function () {
+          const htmls = this.songs.map((song, index) => {
+            return `
+                                <div class="song ${
+                                  index === this.currentIndex ? "active" : ""
+                                }" data-index="${index}">
+                                    <div class="thumb" style="background-image: url('${
+                                      song.image
+                                    }');">
+                                    </div>
+                                    <div class="body">
+                                        <h3 class="title">${song.name}</h3>
+                                        <p class="author">${song.singer}</p>
+                                    </div>
+                                    <div class="option">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </div>
+                                </div>
+                            `;
+          });
+          playlist.innerHTML = htmls.join("");
+        },
+        defineProperties: function () {
+          Object.defineProperty(this, "currentSong", {
+            get: function () {
+              return this.songs[this.currentIndex];
+            },
+          });
+        },
+        handleEvents: function () {
+          const cdWidth = cd.offsetWidth; //current horizontal dimension is 200px
+
+          //
+          const cdThumbAnimate = cdThumb.animate(
+            [{ transform: "rotate(360deg)" }],
+            {
+              //option 
+              duration: 10000, //10second
+              iterations: Infinity, //
+            }
+          );
+          cdThumbAnimate.pause(); // 
+
+          // 
+          document.onscroll = function () {
+            const scrollTop =
+              window.scrollY || document.documentElement.scrollTop;
+            const newCdWidth = cdWidth - scrollTop;
+
+            cd.style.width = newCdWidth > 0 ? newCdWidth + 'px' : 0//if the cd hasn't tried it all yet
+            //cd.style.width = newCdWidth + "px";
+            cd.style.opacity = newCdWidth / cdWidth;//opacity tu 0 -> 1 Then divide the new size by the old size to get the ratio
+          };
+          // 
+          playBtn.onclick = function () {
+            //here only play or pause also handle the state below
+            if (app.isPlaying) {
+              audio.pause();
+            } else {
+              audio.play();
+            }
+          };
+
+          // 
+          audio.onplay = function () {
+            app.isPlaying = true;
+            player.classList.add("playing");
+            cdThumbAnimate.play();
+          };
+
+          //
+          audio.onpause = function () {
+            app.isPlaying = false;
+            player.classList.remove("playing");
+            cdThumbAnimate.pause();
+          };
+
+          // 
+          audio.ontimeupdate = function () {
+            if (audio.duration) {
+              const progressPercent = Math.floor(
+                (audio.currentTime / audio.duration) * 100
+              );
+              progress.value = progressPercent;
+            }
+          };
+
+          // 
+          progress.onchange = function (e) {
+            const seekTime = (audio.duration / 100) * e.target.value;
+            audio.currentTime = seekTime;
+          };
+
+          // 
+          nextBtn.onclick = function () {
+            if (app.isRandom) {
+              app.playRandomSong(); //
+            } else {
+              app.nextSong();
+            }
+            audio.play();
+            app.render(); //
+            app.scrollToActiveSong();
+          };
+
+          // Khi previous song
+          prevBtn.onclick = function () {
+            if (app.isRandom) {
+              app.playRandomSong(); //When the above random is done, call this function again
+            } else {
+              app.prevSong();
+            }
+            audio.play();
+            app.render(); //
+          };
+
+          // Handling random song on/off
+          randomBtn.onclick = function () {
+            app.isRandom = !app.isRandom;
+            app.setConfig("isRandom", app.isRandom);
+            randomBtn.classList.toggle("active", app.isRandom); // When I click it, I will turn red
+            //Toggle's t2 argument is boolean, so if it is true, add the class in t1 argument and vice versa
+          };
+
+          // song repeat processing
+          repeatBtn.onclick = function () {
+            app.isRepeat = !app.isRepeat; //đối nhau
+            app.setConfig("isRepeat", app.isRepeat);
+            repeatBtn.classList.toggle("active", app.isRepeat);
+          };
+
+          // Process next song when audio ended
+          audio.onended = function () {
+            if (app.isRepeat) {
+              audio.play();
+            } else {
+              nextBtn.click();
+            }
+          };
+
+          // Listen to playlist click event
+          playlist.onclick = function (e) {
+            // e is the event we get after clicking down
+            //console.log(e.target)// target is the target it will return what you target
+            const songNode = e.target.closest(".song:not(.active)");
+            if (songNode || e.target.closest(".option")) {
+              //closest will return 1 as itself 2 as its parent tag
+              // not active is the css selector (any song that is playing doesn't need to be active anymore)
+              if (songNode) {
+                app.currentIndex = Number(songNode.dataset.index);
+                app.loadCurrentSong();
+                app.render();
+                audio.play();
+              }
+
+              // Handling when clicking option...
+            }
+          };
+        },
+
+        scrollToActiveSong: function () {
+          setTimeout(() => {
+            $(".song.active").scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+            });
+          }, 500);
+        },
+
+        // getCurrentSong: function() {
+        //     return this.songs[this.song];
+        // },
+
+        // This function is used to get the song data
+        loadCurrentSong: function () {
+          heading.textContent = this.currentSong.name;
+          cdThumb.style.backgroundImage = `url('${this.currentSong.image}')`;
+          audio.src = this.currentSong.path;
+        },
+
+        loadConfig: function () {
+          this.isRandom = this.config.isRandom;
+          this.isRepeat = this.config.isRepeat;
+        },
+
+        nextSong: function () {
+          this.currentIndex++;
+          if (this.currentIndex >= this.songs.length) {
+            this.currentIndex = 0;
+          }
+          this.loadCurrentSong(); //
+        },
+
+        prevSong: function () {
+          this.currentIndex--;
+          if (this.currentIndex < 0) {
+            this.currentIndex = this.songs.length - 1;
+          }
+          this.loadCurrentSong(); //
+        },
+
+        playRandomSong: function () {
+          // random 
+          let newIndex;
+          do {
+            newIndex = Math.floor(Math.random() * this.songs.length);
+          } while (newIndex === this.currentIndex); // index mother than the current index when clicking next or prev // in while will be false condition // if still equal to the old one, return to loop
+
+          this.currentIndex = newIndex; //After passing do while, set the new song again
+          this.loadCurrentSong();
+        },
+        start: function () {
+          // Assign configuration from config to application
+          this.loadConfig();
+
+          // Attribute definition for Object
+          this.defineProperties();
+
+          // Listen / Handle events (DOM events)
+          this.handleEvents();
+
+          // Load the first song info into the UI when running the app
+          this.loadCurrentSong();
+
+          // Render playlist
+          this.render();
+
+          // show initial status of btn repeat
+          randomBtn.classList.toggle("active", this.isRandom);
+          repeatBtn.classList.toggle("active", this.isRepeat);
+        },
+      };
+      app.start();
+    </script>
+	 
+  </body>
+</html>
